@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.junit.Test;
@@ -13,7 +14,6 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 
 public class BMSTest {
 	WebDriver driver = null;
-	List<String> status = new ArrayList<String>();
 	String mailBody = "";
 	
 	@Test
@@ -22,6 +22,10 @@ public class BMSTest {
 		String url = data.getUrl();
 		List<String> myTheatreList = data.getMyTheatres();
 		String driverToLaunch = data.getDriver();
+		List<String> expShowTimesList = data.getShowTime();
+		List<String> expRowsList = data.getRow();
+		int expMinNoOfTickets = data.getMinTickets();
+		
 		if(driverToLaunch.equalsIgnoreCase("CHROME")) {
 			System.out.println("CHROME");
 			System.setProperty("webdriver.chrome.driver", "driver\\chromedriver.exe");
@@ -48,11 +52,22 @@ public class BMSTest {
 			if(availableSlot==null) {
 				continue;
 			}
+			
+			//Theatre
 			String currentThreatre = availableSlot.findElement(By.xpath("ancestor::li//*[@class='__venue-name']")).getText();
 			System.out.println(currentThreatre);
 			if(!myTheatreList.contains(currentThreatre)) {
 				continue;
 			}
+			
+			//Show Time
+			if(!expShowTimesList.isEmpty() && !expShowTimesList.contains("ANY")) {
+				String showTime = availableSlot.getAttribute("data-showtime-code");
+				if(showTime!=null && !expShowTimesList.contains(availableSlot.getAttribute("data-showtime-code"))) {
+					continue;
+				}
+			}
+			
 			availableSlot.click();
 			pageLoad();
 			
@@ -105,15 +120,39 @@ public class BMSTest {
 					continue;
 				}
 
-				int seats = driver.findElements(By.xpath("//div[@class='seatI']/a[@class='_available']")).size();
-				if(seats>0) {
+				HashMap<String, Integer> seatsInRowMap = new HashMap<String, Integer>();
+				if(expRowsList==null || expRowsList.isEmpty() || expRowsList.contains("ANY")) {
+					expMinNoOfTickets = 0;
+					int tempNoOfSeats = driver.findElements(By.xpath("//div[@class='seatI']/a[@class='_available']")).size();
+					seatsInRowMap.put("ALL", tempNoOfSeats);
+				} else {
+					for (String expRow : expRowsList) {
+						int tempNoOfSeats = driver.findElements(By.xpath("//div[@class='seatR Setrow1' and text()='"+expRow+"']/../following-sibling::td//div[@class='seatI']/a[@class='_available']")).size();
+						seatsInRowMap.put(expRow, tempNoOfSeats);
+						System.out.println(tempNoOfSeats +" in "+ expRow);
+					}
+				}
+				
+				List<String> expSeatsStrList = new ArrayList<String>();
+				for (String rowKey : seatsInRowMap.keySet()) {
+					int noOfSeatsInRow = seatsInRowMap.get(rowKey);
+					if(noOfSeatsInRow>expMinNoOfTickets) {
+						String tempRowStr = rowKey+" - "+noOfSeatsInRow;
+						expSeatsStrList.add(tempRowStr);
+					}
+				}
+				
+				if(!expSeatsStrList.isEmpty()) {
+					String actSeatsStr = "";
+					for (String currentSeatsStr : expSeatsStrList) {
+						actSeatsStr = actSeatsStr + currentSeatsStr + "<br>";
+					}
 					String theatre = driver.findElement(By.id("strVenName")).getText();
 					String time = driver.findElement(By.id("strDate")).getText();
-					status.add(theatre+" - "+time+" - "+seats);
-					mailBody = mailBody+"<tr><td>"+theatre+"</td><td>"+time+"</td><td>"+seats+"</td></tr>";
-					System.out.println(theatre+" - "+time+" - "+seats);
+					mailBody = mailBody+"<tr><td>"+theatre+"</td><td>"+time+"</td><td>"+actSeatsStr+"</td></tr>";
+					System.out.println(theatre+" - "+time+" - "+actSeatsStr);
 				}
-			
+				
 				WebElement backObj = driver.findElement(By.id("disback"));
 				if(isDisplayed(backObj)) {
 					System.out.println("Back "+backObj.getCssValue("display"));
@@ -166,4 +205,5 @@ public class BMSTest {
 	private void implicitWait() {
 		driver.manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);
 	}
+	
 }

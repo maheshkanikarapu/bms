@@ -13,6 +13,9 @@ public class ReadData {
 	private String receipients;
 	private String subject;
 	private String driver;
+	private List<String> showTime = new ArrayList<String>();
+	private List<String> row = new ArrayList<String>();
+	private int minTickets;
 	
 	public ReadData(String filePath) {
 		Properties prop = new Properties();
@@ -37,8 +40,23 @@ public class ReadData {
 		receipients = prop.getProperty("RECEIPIENTS");
 		subject = prop.getProperty("SUBJECT");
 		driver = prop.getProperty("DRIVER");
+		showTime = Arrays.asList(prop.getProperty("SHOWTIME").split(";"));
+		row = Arrays.asList(prop.getProperty("ROW").split(";"));
+		minTickets = Integer.parseInt(prop.getProperty("MINTICKETS"));
 	}
 	
+	public List<String> getShowTime() {
+		return showTime;
+	}
+
+	public List<String> getRow() {
+		return row;
+	}
+
+	public int getMinTickets() {
+		return minTickets;
+	}
+
 	public String getSubject() {
 		return subject;
 	}
