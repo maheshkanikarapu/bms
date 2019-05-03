@@ -1,3 +1,5 @@
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Properties;
 import javax.mail.Message;
 import javax.mail.Session;
@@ -22,7 +24,7 @@ public class MailAPI {
 		for (int i = 0; i < toEmails.length; i++) {
 			emailMessage.addRecipient(Message.RecipientType.TO, new InternetAddress(toEmails[i]));
 		}
-		emailMessage.setSubject(data.getSubject());
+		emailMessage.setSubject(data.getSubject()+" "+timeStamp());
 		emailMessage.setContent(body, "text/html");//for a html email
 		String emailHost = "smtp.gmail.com";
 		String fromUser = data.getFromUser();//just the id alone without @gmail.com
@@ -32,5 +34,9 @@ public class MailAPI {
 		transport.sendMessage(emailMessage, emailMessage.getAllRecipients());
 		transport.close();
 		System.out.println("Email sent successfully.");
+	}
+	
+	private static String timeStamp() {
+		return new SimpleDateFormat("ddMMyyyyHHmmss").format(new Date());
 	}
 }
